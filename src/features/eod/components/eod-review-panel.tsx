@@ -31,7 +31,7 @@ export function EodReviewPanel({ updates, reviewerId }: EodReviewPanelProps) {
   const handleReview = async (updateId: string) => {
     setLoadingId(updateId);
     try {
-      const supabase = createClient();
+      const supabase = createClient() as any;
       const { error } = await supabase
         .from("daily_updates")
         .update({

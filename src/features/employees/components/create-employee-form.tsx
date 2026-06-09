@@ -75,13 +75,12 @@ export function CreateEmployeeForm({ departments }: CreateEmployeeFormProps) {
     setIsSubmitting(true);
     try {
       const result = await createEmployee(values);
-      if (result.error) {
-        toast.error(result.error);
+      if (!result.success) {
+        toast.error("Failed to create employee");
         return;
       }
-      toast.success("Employee created successfully");
-      router.push(`/employees/${result.profileId}`);
-      router.refresh();
+
+
     } catch {
       toast.error("Failed to create employee");
     } finally {

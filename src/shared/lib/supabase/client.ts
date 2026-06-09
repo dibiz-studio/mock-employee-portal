@@ -1,7 +1,7 @@
 // Stub Supabase client — no real network calls
 import { MOCK_SUPER_ADMIN } from "@/shared/lib/mock-data";
 
-function makeQueryBuilder(): Record<string, unknown> {
+function makeQueryBuilder(): unknown {
   const builder: Record<string, unknown> = {};
   const chainMethods = [
     "select", "insert", "update", "delete", "upsert",
