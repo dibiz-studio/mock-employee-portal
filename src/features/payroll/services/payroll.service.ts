@@ -1,6 +1,5 @@
-import { createClient } from "@/shared/lib/supabase/server";
-import { asSingleRelation } from "@/shared/lib/utils";
 import type { AppRole } from "@/shared/types/roles";
+import { MOCK_PAYROLL_RECORDS, MOCK_EMPLOYEES } from "@/shared/lib/mock-data";
 
 export interface PayrollRecordRow {
   id: string;
@@ -24,57 +23,52 @@ export async function getPayrollRecords(
   role: AppRole,
   options?: { employeeId?: string; month?: number; year?: number },
 ): Promise<PayrollRecordRow[]> {
-  const supabase = await createClient();
-  let query = supabase
-    .from("payroll_records")
-    .select(
-      "id, employee_id, period_month, period_year, base_salary, allowances, deductions, leave_deduction, gross_pay, net_pay, status, notes, created_at, profiles!payroll_records_employee_id_fkey(full_name)",
-    )
-    .order("period_year", { ascending: false })
-    .order("period_month", { ascending: false });
+  let records = [...MOCK_PAYROLL_RECORDS];
 
   if (options?.employeeId) {
-    query = query.eq("employee_id", options.employeeId);
-  } else if (role === "EMPLOYEE") {
-    query = query.eq("employee_id", userId);
-  } else if (role === "INTERN") {
-    query = query.eq("employee_id", userId);
+    records = records.filter((r) => r.employee_id === options.employeeId);
+  } else if (role === "EMPLOYEE" || role === "INTERN") {
+    records = records.filter((r) => r.employee_id === userId);
   }
 
-  if (options?.month) query = query.eq("period_month", options.month);
-  if (options?.year) query = query.eq("period_year", options.year);
+  if (options?.month) {
+    records = records.filter((r) => r.period_month === options.month);
+  }
+  if (options?.year) {
+    records = records.filter((r) => r.period_year === options.year);
+  }
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    employee_id: row.employee_id,
-    employee_name: asSingleRelation(row.profiles)?.full_name ?? "Unknown",
-    period_month: row.period_month,
-    period_year: row.period_year,
-    base_salary: Number(row.base_salary),
-    allowances: (row.allowances as Record<string, number>) ?? {},
-    deductions: (row.deductions as Record<string, number>) ?? {},
-    leave_deduction: Number(row.leave_deduction),
-    gross_pay: Number(row.gross_pay),
-    net_pay: Number(row.net_pay),
-    status: row.status,
-    notes: row.notes,
-    created_at: row.created_at,
-  }));
+  return records.sort((a, b) => {
+    if (b.period_year !== a.period_year) return b.period_year - a.period_year;
+    return b.period_month - a.period_month;
+  });
 }
 
 export async function getPayrollSummary(userId: string, role: AppRole) {
   const now = new Date();
-  const records = await getPayrollRecords(userId, role, {
+  let records = await getPayrollRecords(userId, role, {
     month: now.getMonth() + 1,
     year: now.getFullYear(),
   });
 
+  // Fall back to the most recent month that has data
+  if (records.length === 0) {
+    records = await getPayrollRecords(userId, role);
+    if (records.length > 0) {
+      const latest = records[0];
+      records = records.filter(
+        (r) =>
+          r.period_month === latest.period_month &&
+          r.period_year === latest.period_year,
+      );
+    }
+  }
+
   const totalGross = records.reduce((sum, r) => sum + r.gross_pay, 0);
   const totalNet = records.reduce((sum, r) => sum + r.net_pay, 0);
-  const processed = records.filter((r) => r.status === "PROCESSED" || r.status === "PAID").length;
+  const processed = records.filter(
+    (r) => r.status === "PROCESSED" || r.status === "PAID",
+  ).length;
   const draft = records.filter((r) => r.status === "DRAFT").length;
 
   return {
@@ -89,18 +83,13 @@ export async function getPayrollSummary(userId: string, role: AppRole) {
 
 export async function getPayrollAnalytics(userId: string, role: AppRole) {
   const records = await getPayrollRecords(userId, role);
-  const byDepartment: Record<string, { gross: number; net: number; count: number }> = {};
-
-  const supabase = await createClient();
-  const { data: employees } = await supabase
-    .from("employee_profiles")
-    .select("profile_id, departments(name)");
-
-  const deptMap = new Map<string, string>();
-  for (const emp of employees ?? []) {
-    const dept = asSingleRelation(emp.departments);
-    deptMap.set(emp.profile_id, dept?.name ?? "Unassigned");
-  }
+  const deptMap = new Map(
+    MOCK_EMPLOYEES.map((e) => [e.profile_id, e.department?.name ?? "Unassigned"]),
+  );
+  const byDepartment: Record<
+    string,
+    { gross: number; net: number; count: number }
+  > = {};
 
   for (const record of records) {
     const dept = deptMap.get(record.employee_id) ?? "Unassigned";
@@ -143,6 +132,5 @@ export async function getEmployeePayroll(
   ) {
     return [];
   }
-
   return getPayrollRecords(viewerId, viewerRole, { employeeId });
 }

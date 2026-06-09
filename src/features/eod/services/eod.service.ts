@@ -1,6 +1,9 @@
-import { createClient } from "@/shared/lib/supabase/server";
-import { asSingleRelation } from "@/shared/lib/utils";
 import type { AppRole } from "@/shared/types/roles";
+import {
+  MOCK_ALL_EOD_RECORDS,
+  MOCK_EOD_ROSTER,
+  getRecentWorkingDays,
+} from "@/shared/lib/mock-data";
 
 export interface DailyUpdateRow {
   id: string;
@@ -17,48 +20,32 @@ export interface DailyUpdateRow {
   created_at: string;
 }
 
-async function getTeamMemberIds(managerId: string): Promise<string[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("manager_assignments")
-    .select("employee_id")
-    .eq("manager_id", managerId)
-    .eq("is_active", true);
-
-  return data?.map((row) => row.employee_id) ?? [];
+export interface EodBoardEmployeeDay {
+  date: string;
+  submission: DailyUpdateRow | null;
 }
 
-function mapDailyUpdate(row: Record<string, unknown>): DailyUpdateRow {
-  return {
-    id: row.id as string,
-    employee_id: row.employee_id as string,
-    employee_name:
-      asSingleRelation(
-        row.profiles as { full_name: string } | { full_name: string }[] | null,
-      )?.full_name ?? "Unknown",
-    report_date: row.report_date as string,
-    tasks_completed: (row.tasks_completed as string[]) ?? [],
-    hours_worked: Number(row.hours_worked),
-    blockers: row.blockers as string | null,
-    tomorrow_plan: row.tomorrow_plan as string | null,
-    manager_comment: row.manager_comment as string | null,
-    reviewed_by: row.reviewed_by as string | null,
-    reviewed_at: row.reviewed_at as string | null,
-    created_at: row.created_at as string,
-  };
+export interface EodBoardEmployee {
+  employee_id: string;
+  employee_name: string;
+  job_title: string;
+  department: string;
+  days: EodBoardEmployeeDay[];
+}
+
+export interface EodBoard {
+  dates: string[];
+  employees: EodBoardEmployee[];
+  submittedToday: number;
+  pendingToday: number;
+  total: number;
 }
 
 export async function getEodDashboard(userId: string, role: AppRole) {
-  const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];
-
-  const { data: todayUpdate } = await supabase
-    .from("daily_updates")
-    .select("id")
-    .eq("employee_id", userId)
-    .eq("report_date", today)
-    .maybeSingle();
-
+  const todayUpdate = MOCK_ALL_EOD_RECORDS.find(
+    (r) => r.employee_id === userId && r.report_date === today,
+  );
   const recent = await getEodHistory(userId, role, { limit: 5 });
 
   let teamPendingReview = 0;
@@ -75,37 +62,62 @@ export async function getEodDashboard(userId: string, role: AppRole) {
   };
 }
 
+// Manager/HR/Admin board: every employee, with their submission for each of the
+// most recent working days (defaults to today + yesterday), ordered by name.
+export async function getEodTeamBoard(days = 2): Promise<EodBoard> {
+  const dates = getRecentWorkingDays(days); // most-recent first
+  const today = dates[0];
+
+  const employees: EodBoardEmployee[] = MOCK_EOD_ROSTER.map((member) => ({
+    employee_id: member.employee_id,
+    employee_name: member.employee_name,
+    job_title: member.job_title,
+    department: member.department,
+    days: dates.map((date) => ({
+      date,
+      submission:
+        MOCK_ALL_EOD_RECORDS.find(
+          (r) => r.employee_id === member.employee_id && r.report_date === date,
+        ) ?? null,
+    })),
+  })).sort((a, b) => a.employee_name.localeCompare(b.employee_name));
+
+  const submittedToday = employees.filter(
+    (e) => e.days.find((d) => d.date === today)?.submission,
+  ).length;
+
+  return {
+    dates,
+    employees,
+    submittedToday,
+    pendingToday: employees.length - submittedToday,
+    total: employees.length,
+  };
+}
+
 export async function getEodHistory(
   userId: string,
   role: AppRole,
   options?: { employeeId?: string; limit?: number },
 ): Promise<DailyUpdateRow[]> {
-  const supabase = await createClient();
-  let query = supabase
-    .from("daily_updates")
-    .select(
-      "id, employee_id, report_date, tasks_completed, hours_worked, blockers, tomorrow_plan, manager_comment, reviewed_by, reviewed_at, created_at, profiles!daily_updates_employee_id_fkey(full_name)",
-    )
-    .order("report_date", { ascending: false });
+  let records = [...MOCK_ALL_EOD_RECORDS];
 
   if (options?.employeeId) {
-    query = query.eq("employee_id", options.employeeId);
+    records = records.filter((r) => r.employee_id === options.employeeId);
   } else if (role === "EMPLOYEE" || role === "INTERN") {
-    query = query.eq("employee_id", userId);
-  } else if (role === "MANAGER") {
-    const teamIds = await getTeamMemberIds(userId);
-    teamIds.push(userId);
-    query = query.in("employee_id", teamIds);
+    records = records.filter((r) => r.employee_id === userId);
   }
+
+  records.sort(
+    (a, b) =>
+      new Date(b.report_date).getTime() - new Date(a.report_date).getTime(),
+  );
 
   if (options?.limit) {
-    query = query.limit(options.limit);
+    records = records.slice(0, options.limit);
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((row) => mapDailyUpdate(row));
+  return records;
 }
 
 export async function getTeamEodForReview(
@@ -113,38 +125,24 @@ export async function getTeamEodForReview(
   role: AppRole,
   options?: { date?: string },
 ): Promise<DailyUpdateRow[]> {
-  const supabase = await createClient();
-  let query = supabase
-    .from("daily_updates")
-    .select(
-      "id, employee_id, report_date, tasks_completed, hours_worked, blockers, tomorrow_plan, manager_comment, reviewed_by, reviewed_at, created_at, profiles!daily_updates_employee_id_fkey(full_name)",
-    )
-    .order("report_date", { ascending: false });
-
-  if (role === "MANAGER") {
-    const teamIds = await getTeamMemberIds(userId);
-    if (teamIds.length === 0) return [];
-    query = query.in("employee_id", teamIds);
-  }
+  let records = [...MOCK_ALL_EOD_RECORDS];
 
   if (options?.date) {
-    query = query.eq("report_date", options.date);
+    records = records.filter((r) => r.report_date === options.date);
   }
 
-  const { data, error } = await query.limit(50);
-  if (error) throw error;
+  records.sort(
+    (a, b) =>
+      new Date(b.report_date).getTime() - new Date(a.report_date).getTime(),
+  );
 
-  return (data ?? []).map((row) => mapDailyUpdate(row));
+  return records.slice(0, 60);
 }
 
 export async function getEodByDate(employeeId: string, date: string) {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("daily_updates")
-    .select("*")
-    .eq("employee_id", employeeId)
-    .eq("report_date", date)
-    .maybeSingle();
-
-  return data;
+  return (
+    MOCK_ALL_EOD_RECORDS.find(
+      (r) => r.employee_id === employeeId && r.report_date === date,
+    ) ?? null
+  );
 }

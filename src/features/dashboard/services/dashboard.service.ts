@@ -1,8 +1,11 @@
-import { redirect } from "next/navigation";
-
-import { getServerProfile } from "@/features/auth/services/auth-server.service";
-import { createClient } from "@/shared/lib/supabase/server";
 import type { AppRole } from "@/shared/types/roles";
+import {
+  MOCK_PROFILES,
+  MOCK_DEPARTMENTS,
+  MOCK_LEAVE_REQUESTS,
+  MOCK_EMPLOYEE_KPIS,
+  MOCK_NOTIFICATIONS,
+} from "@/shared/lib/mock-data";
 
 export interface DashboardStats {
   totalEmployees: number;
@@ -14,141 +17,44 @@ export interface DashboardStats {
   pendingOnboarding: number;
 }
 
-async function getTeamMemberIds(managerId: string): Promise<string[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("manager_assignments")
-    .select("employee_id")
-    .eq("manager_id", managerId)
-    .eq("is_active", true);
-
-  return data?.map((row) => row.employee_id) ?? [];
-}
-
 export async function getDashboardStats(
   userId: string,
   role: AppRole,
 ): Promise<DashboardStats> {
-  const supabase = await createClient();
-
-  let employeeFilter: string[] | null = null;
-
-  if (role === "MANAGER") {
-    employeeFilter = await getTeamMemberIds(userId);
-  } else if (role === "EMPLOYEE" || role === "INTERN") {
-    employeeFilter = [userId];
-  }
-
-  const profilesQuery = supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("is_active", true);
-
-  const leaveQuery = supabase
-    .from("leave_requests")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "PENDING");
-
-  const activeKpisQuery = supabase
-    .from("employee_kpis")
-    .select("*", { count: "exact", head: true })
-    .in("status", ["NOT_STARTED", "IN_PROGRESS", "ON_TRACK", "AT_RISK"]);
-
-  const atRiskKpisQuery = supabase
-    .from("employee_kpis")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "AT_RISK");
-
-  const notificationsQuery = supabase
-    .from("notifications")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_read", false);
-
-  const departmentsQuery = supabase
-    .from("departments")
-    .select("*", { count: "exact", head: true })
-    .eq("is_active", true);
-
-  const pendingOnboardingQuery = supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("onboarding_status", "PENDING")
-    .eq("is_active", true);
-
-  if (employeeFilter) {
-    if (employeeFilter.length === 0) {
-      return {
-        totalEmployees: 0,
-        pendingLeaves: 0,
-        activeKpis: 0,
-        kpiAtRisk: 0,
-        unreadNotifications: 0,
-        departments: 0,
-        pendingOnboarding: 0,
-      };
-    }
-
-    profilesQuery.in("id", employeeFilter);
-    leaveQuery.in("employee_id", employeeFilter);
-    activeKpisQuery.in("employee_id", employeeFilter);
-    atRiskKpisQuery.in("employee_id", employeeFilter);
-  }
-
-  const isOrgAdmin = role === "SUPER_ADMIN" || role === "HR";
-
-  const [
-    profilesResult,
-    leavesResult,
-    activeKpisResult,
-    atRiskKpisResult,
-    notificationsResult,
-    departmentsResult,
-    pendingOnboardingResult,
-  ] = await Promise.all([
-    profilesQuery,
-    leaveQuery,
-    activeKpisQuery,
-    atRiskKpisQuery,
-    notificationsQuery,
-    isOrgAdmin ? departmentsQuery : Promise.resolve({ count: 0 }),
-    isOrgAdmin
-      ? pendingOnboardingQuery
-      : Promise.resolve({ count: 0 }),
-  ]);
+  const activeProfiles = MOCK_PROFILES.filter((p) => p.is_active);
+  const pendingLeaves = MOCK_LEAVE_REQUESTS.filter((l) => l.status === "PENDING").length;
+  const activeKpis = MOCK_EMPLOYEE_KPIS.filter((k) =>
+    ["NOT_STARTED", "IN_PROGRESS", "ON_TRACK", "AT_RISK"].includes(k.status)
+  ).length;
+  const kpiAtRisk = MOCK_EMPLOYEE_KPIS.filter((k) => k.status === "AT_RISK").length;
+  const unreadNotifications = MOCK_NOTIFICATIONS.filter(
+    (n) => n.user_id === userId && !n.is_read
+  ).length;
+  const departments = MOCK_DEPARTMENTS.filter((d) => d.is_active).length;
+  const pendingOnboarding = MOCK_PROFILES.filter(
+    (p) => p.onboarding_status === "PENDING" && p.is_active
+  ).length;
 
   return {
-    totalEmployees: profilesResult.count ?? 0,
-    pendingLeaves: leavesResult.count ?? 0,
-    activeKpis: activeKpisResult.count ?? 0,
-    kpiAtRisk: atRiskKpisResult.count ?? 0,
-    unreadNotifications: notificationsResult.count ?? 0,
-    departments: departmentsResult.count ?? 0,
-    pendingOnboarding: pendingOnboardingResult.count ?? 0,
+    totalEmployees: activeProfiles.length,
+    pendingLeaves,
+    activeKpis,
+    kpiAtRisk,
+    unreadNotifications,
+    departments,
+    pendingOnboarding,
   };
 }
 
 export async function requireRole(allowed: AppRole[]) {
-  const profile = await getServerProfile();
-
-  if (!profile) {
-    redirect("/login");
-  }
-
-  if (!allowed.includes(profile.role)) {
+  const { MOCK_SUPER_ADMIN } = await import("@/shared/lib/mock-data");
+  if (!allowed.includes(MOCK_SUPER_ADMIN.role)) {
+    const { redirect } = await import("next/navigation");
     redirect("/access-denied");
   }
-
-  return profile;
+  return MOCK_SUPER_ADMIN;
 }
 
 export async function getUnreadNotificationCount(userId: string) {
-  const supabase = await createClient();
-  const { count } = await supabase
-    .from("notifications")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_read", false);
-
-  return count ?? 0;
+  return MOCK_NOTIFICATIONS.filter((n) => n.user_id === userId && !n.is_read).length;
 }

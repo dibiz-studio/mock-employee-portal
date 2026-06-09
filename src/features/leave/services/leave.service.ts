@@ -1,5 +1,9 @@
-import { createClient } from "@/shared/lib/supabase/server";
 import type { AppRole } from "@/shared/types/roles";
+import {
+  MOCK_LEAVE_POLICIES,
+  MOCK_LEAVE_REQUESTS,
+  MOCK_LEAVE_BALANCES,
+} from "@/shared/lib/mock-data";
 
 export interface LeaveBalance {
   id: string;
@@ -44,52 +48,11 @@ export interface LeavePolicyRow {
   is_active: boolean;
 }
 
-import { asSingleRelation } from "@/shared/lib/utils";
-
-async function getTeamMemberIds(managerId: string): Promise<string[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("manager_assignments")
-    .select("employee_id")
-    .eq("manager_id", managerId)
-    .eq("is_active", true);
-
-  return data?.map((row) => row.employee_id) ?? [];
-}
-
 export async function getLeaveBalances(
   employeeId: string,
   year?: number,
 ): Promise<LeaveBalance[]> {
-  const supabase = await createClient();
-  const currentYear = year ?? new Date().getFullYear();
-
-  const { data, error } = await supabase
-    .from("employee_leave_policy")
-    .select(
-      "id, policy_id, allocated_days, used_days, year, leave_policies(name, code)",
-    )
-    .eq("employee_id", employeeId)
-    .eq("year", currentYear);
-
-  if (error) throw error;
-
-  return (data ?? []).map((row) => {
-    const policy = asSingleRelation(row.leave_policies);
-    const allocated = Number(row.allocated_days);
-    const used = Number(row.used_days);
-
-    return {
-      id: row.id,
-      policy_id: row.policy_id,
-      policy_name: policy?.name ?? "Unknown",
-      policy_code: policy?.code ?? "",
-      allocated_days: allocated,
-      used_days: used,
-      remaining_days: allocated - used,
-      year: row.year,
-    };
-  });
+  return MOCK_LEAVE_BALANCES;
 }
 
 export async function getLeaveRequests(
@@ -97,51 +60,26 @@ export async function getLeaveRequests(
   role: AppRole,
   options?: { employeeId?: string; status?: string; limit?: number },
 ): Promise<LeaveRequestRow[]> {
-  const supabase = await createClient();
-  let query = supabase
-    .from("leave_requests")
-    .select(
-      "id, employee_id, policy_id, start_date, end_date, days_requested, reason, status, reviewed_by, reviewed_at, review_notes, created_at, profiles!leave_requests_employee_id_fkey(full_name), leave_policies(name)",
-    )
-    .order("created_at", { ascending: false });
+  let records = [...MOCK_LEAVE_REQUESTS];
 
   if (options?.employeeId) {
-    query = query.eq("employee_id", options.employeeId);
+    records = records.filter((r) => r.employee_id === options.employeeId);
   } else if (role === "EMPLOYEE" || role === "INTERN") {
-    query = query.eq("employee_id", userId);
-  } else if (role === "MANAGER") {
-    const teamIds = await getTeamMemberIds(userId);
-    if (teamIds.length === 0) return [];
-    query = query.in("employee_id", teamIds);
+    records = records.filter((r) => r.employee_id === userId);
   }
 
   if (options?.status) {
-    query = query.eq("status", options.status);
+    records = records.filter((r) => r.status === options.status);
   }
 
   if (options?.limit) {
-    query = query.limit(options.limit);
+    records = records.slice(0, options.limit);
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    employee_id: row.employee_id,
-    employee_name: asSingleRelation(row.profiles)?.full_name ?? "Unknown",
-    policy_id: row.policy_id,
-    policy_name: asSingleRelation(row.leave_policies)?.name ?? "Unknown",
-    start_date: row.start_date,
-    end_date: row.end_date,
-    days_requested: Number(row.days_requested),
-    reason: row.reason,
-    status: row.status,
-    reviewed_by: row.reviewed_by,
-    reviewed_at: row.reviewed_at,
-    review_notes: row.review_notes,
-    created_at: row.created_at,
-  }));
+  return records.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 }
 
 export async function getPendingLeaveApprovals(
@@ -149,87 +87,36 @@ export async function getPendingLeaveApprovals(
   role: AppRole,
 ): Promise<LeaveRequestRow[]> {
   if (role === "EMPLOYEE" || role === "INTERN") return [];
-
-  const requests = await getLeaveRequests(userId, role, { status: "PENDING" });
-  return requests;
+  return getLeaveRequests(userId, role, { status: "PENDING" });
 }
 
 export async function getLeavePolicies(
   activeOnly = true,
 ): Promise<LeavePolicyRow[]> {
-  const supabase = await createClient();
-  let query = supabase.from("leave_policies").select("*").order("name");
-
-  if (activeOnly) {
-    query = query.eq("is_active", true);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    name: row.name,
-    code: row.code,
-    description: row.description,
-    days_per_year: Number(row.days_per_year),
-    is_paid: row.is_paid,
-    requires_approval: row.requires_approval,
-    min_notice_days: row.min_notice_days,
-    max_consecutive_days: row.max_consecutive_days,
-    carry_forward: row.carry_forward,
-    carry_forward_limit: row.carry_forward_limit
-      ? Number(row.carry_forward_limit)
-      : null,
-    is_active: row.is_active,
-  }));
+  const policies = MOCK_LEAVE_POLICIES;
+  return activeOnly ? policies.filter((p) => p.is_active) : policies;
 }
 
 export async function getLeavePolicy(id: string): Promise<LeavePolicyRow | null> {
-  const policies = await getLeavePolicies(false);
-  return policies.find((p) => p.id === id) ?? null;
+  return MOCK_LEAVE_POLICIES.find((p) => p.id === id) ?? null;
 }
 
 export async function getLeaveCalendarEvents(
   userId: string,
   role: AppRole,
 ): Promise<LeaveRequestRow[]> {
-  const supabase = await createClient();
-  let query = supabase
-    .from("leave_requests")
-    .select(
-      "id, employee_id, policy_id, start_date, end_date, days_requested, reason, status, reviewed_by, reviewed_at, review_notes, created_at, profiles!leave_requests_employee_id_fkey(full_name), leave_policies(name)",
-    )
-    .in("status", ["APPROVED", "PENDING"])
-    .order("start_date", { ascending: true });
+  let records = MOCK_LEAVE_REQUESTS.filter((r) =>
+    ["APPROVED", "PENDING"].includes(r.status),
+  );
 
   if (role === "EMPLOYEE" || role === "INTERN") {
-    query = query.eq("employee_id", userId);
-  } else if (role === "MANAGER") {
-    const teamIds = await getTeamMemberIds(userId);
-    teamIds.push(userId);
-    query = query.in("employee_id", teamIds);
+    records = records.filter((r) => r.employee_id === userId);
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    employee_id: row.employee_id,
-    employee_name: asSingleRelation(row.profiles)?.full_name ?? "Unknown",
-    policy_id: row.policy_id,
-    policy_name: asSingleRelation(row.leave_policies)?.name ?? "Unknown",
-    start_date: row.start_date,
-    end_date: row.end_date,
-    days_requested: Number(row.days_requested),
-    reason: row.reason,
-    status: row.status,
-    reviewed_by: row.reviewed_by,
-    reviewed_at: row.reviewed_at,
-    review_notes: row.review_notes,
-    created_at: row.created_at,
-  }));
+  return records.sort(
+    (a, b) =>
+      new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
+  );
 }
 
 export async function getLeaveAnalytics(userId: string, role: AppRole) {
@@ -259,8 +146,7 @@ export async function getLeaveAnalytics(userId: string, role: AppRole) {
 }
 
 export async function getActiveLeavePoliciesForEmployee(employeeId: string) {
-  const balances = await getLeaveBalances(employeeId);
-  return balances.map((b) => ({
+  return MOCK_LEAVE_BALANCES.map((b) => ({
     policy_id: b.policy_id,
     policy_name: b.policy_name,
     remaining_days: b.remaining_days,

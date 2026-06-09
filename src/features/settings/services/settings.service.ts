@@ -1,140 +1,91 @@
-import { createClient } from "@/shared/lib/supabase/server";
 import type { AppRole } from "@/shared/types/roles";
+import {
+  MOCK_PROFILES,
+  MOCK_DEPARTMENTS,
+  MOCK_LEAVE_POLICIES,
+  MOCK_KPI_TEMPLATES,
+  MOCK_SUPER_ADMIN,
+} from "@/shared/lib/mock-data";
 
 export async function getProfile(userId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
-
-  if (error) throw error;
-  return data;
+  return MOCK_PROFILES.find((p) => p.id === userId) ?? MOCK_SUPER_ADMIN;
 }
 
 export async function getDepartments() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("departments")
-    .select(
-      "id, name, code, description, is_active, profiles!departments_head_id_fkey(full_name)",
-    )
-    .order("name");
-
-  if (error) throw error;
-  return data ?? [];
+  return MOCK_DEPARTMENTS.map((d) => ({
+    id: d.id,
+    name: d.name,
+    code: d.code,
+    description: d.description,
+    is_active: d.is_active,
+    profiles: d.head ? [{ full_name: d.head.full_name }] : [],
+  }));
 }
 
 export async function getProfilesForRoleManagement() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, role, is_active, onboarding_status, created_at")
-    .order("onboarding_status", { ascending: true })
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data ?? [];
+  return MOCK_PROFILES.map((p) => ({
+    id: p.id,
+    email: p.email,
+    full_name: p.full_name,
+    role: p.role,
+    is_active: p.is_active,
+    onboarding_status: p.onboarding_status,
+    created_at: p.created_at,
+  })).sort((a, b) => {
+    if (a.onboarding_status !== b.onboarding_status) {
+      return a.onboarding_status === "PENDING" ? -1 : 1;
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 }
 
 export async function getPendingOnboardingUsers() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, role, created_at")
-    .eq("onboarding_status", "PENDING")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data ?? [];
+  return MOCK_PROFILES.filter(
+    (p) => p.onboarding_status === "PENDING" && p.is_active,
+  ).map((p) => ({
+    id: p.id,
+    email: p.email,
+    full_name: p.full_name,
+    role: p.role,
+    created_at: p.created_at,
+  }));
 }
 
 export async function getCompanyStats() {
-  const supabase = await createClient();
-  const [
-    { count: employees },
-    { count: departments },
-    { count: policies },
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
-      .from("departments")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
-      .from("leave_policies")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true),
-  ]);
-
   return {
-    employees: employees ?? 0,
-    departments: departments ?? 0,
-    leavePolicies: policies ?? 0,
+    employees: MOCK_PROFILES.filter((p) => p.is_active).length,
+    departments: MOCK_DEPARTMENTS.filter((d) => d.is_active).length,
+    leavePolicies: MOCK_LEAVE_POLICIES.filter((p) => p.is_active).length,
   };
 }
 
 export async function getLeaveSettings() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("leave_policies")
-    .select("*")
-    .order("name");
-
-  if (error) throw error;
-  return data ?? [];
+  return MOCK_LEAVE_POLICIES;
 }
 
 export async function getKpiSettings() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("kpi_templates")
-    .select("id, name, category, period, is_active, weight, default_target")
-    .order("name");
-
-  if (error) throw error;
-  return data ?? [];
+  return MOCK_KPI_TEMPLATES.map((t) => ({
+    id: t.id,
+    name: t.name,
+    category: t.category,
+    period: t.period,
+    is_active: t.is_active,
+    weight: t.weight,
+    default_target: t.default_target,
+  }));
 }
 
 export async function getPayrollSettings() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("payroll_records")
-    .select("allowances, deductions")
-    .limit(10);
-
-  if (error) throw error;
-
-  const allowanceKeys = new Set<string>();
-  const deductionKeys = new Set<string>();
-
-  for (const record of data ?? []) {
-    Object.keys((record.allowances as Record<string, number>) ?? {}).forEach(
-      (k) => allowanceKeys.add(k),
-    );
-    Object.keys((record.deductions as Record<string, number>) ?? {}).forEach(
-      (k) => deductionKeys.add(k),
-    );
-  }
-
   return {
-    allowanceTypes: Array.from(allowanceKeys),
-    deductionTypes: Array.from(deductionKeys),
-    sampleCount: data?.length ?? 0,
+    allowanceTypes: ["HRA", "transport", "medical", "bonus"],
+    deductionTypes: ["PF", "TDS", "ESI"],
+    sampleCount: 12,
   };
 }
 
 export async function updateProfileRole(userId: string, role: AppRole) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ role })
-    .eq("id", userId);
-
-  if (error) throw error;
+  const profile = MOCK_PROFILES.find((p) => p.id === userId);
+  if (profile) {
+    (profile as { role: AppRole }).role = role;
+  }
 }

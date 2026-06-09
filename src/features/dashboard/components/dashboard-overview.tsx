@@ -207,7 +207,7 @@ export function DashboardOverview({ role, stats }: DashboardOverviewProps) {
       <CardHeader>
         <CardTitle>Overview</CardTitle>
         <CardDescription>
-          Live metrics from your Supabase workspace
+          Real-time metrics for your organization
         </CardDescription>
       </CardHeader>
       <CardContent>

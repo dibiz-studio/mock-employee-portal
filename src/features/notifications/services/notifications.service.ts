@@ -1,4 +1,4 @@
-import { createClient } from "@/shared/lib/supabase/server";
+import { MOCK_NOTIFICATIONS } from "@/shared/lib/mock-data";
 
 export interface NotificationRow {
   id: string;
@@ -11,38 +11,35 @@ export interface NotificationRow {
   created_at: string;
 }
 
+// In-memory store for mutations during the session
+const _notifications = MOCK_NOTIFICATIONS.map((n) => ({ ...n }));
+
 export async function getNotifications(
   userId: string,
 ): Promise<NotificationRow[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("id, type, title, message, link, is_read, read_at, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data ?? [];
+  return _notifications
+    .filter((n) => n.user_id === userId)
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
 }
 
 export async function markNotificationRead(id: string, userId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("notifications")
-    .update({ is_read: true, read_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) throw error;
+  const notif = _notifications.find(
+    (n) => n.id === id && n.user_id === userId,
+  );
+  if (notif) {
+    notif.is_read = true;
+    notif.read_at = new Date().toISOString();
+  }
 }
 
 export async function markAllNotificationsRead(userId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("notifications")
-    .update({ is_read: true, read_at: new Date().toISOString() })
-    .eq("user_id", userId)
-    .eq("is_read", false);
-
-  if (error) throw error;
+  for (const notif of _notifications) {
+    if (notif.user_id === userId) {
+      notif.is_read = true;
+      notif.read_at = new Date().toISOString();
+    }
+  }
 }

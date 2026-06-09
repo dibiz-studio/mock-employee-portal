@@ -1,6 +1,9 @@
-import { createClient } from "@/shared/lib/supabase/server";
 import type { AppRole } from "@/shared/types/roles";
-
+import {
+  MOCK_EMPLOYEE_KPIS,
+  MOCK_KPI_TEMPLATES,
+  MOCK_EMPLOYEES,
+} from "@/shared/lib/mock-data";
 import { calcProgress } from "../lib/utils";
 import type {
   EmployeeKpi,
@@ -10,75 +13,20 @@ import type {
   LeaderboardEntry,
 } from "../types";
 
-const KPI_SELECT = `
-  id,
-  employee_id,
-  template_id,
-  title,
-  description,
-  target_value,
-  current_value,
-  unit,
-  weight,
-  period,
-  period_start,
-  period_end,
-  status,
-  notes,
-  created_at,
-  employee:profiles!employee_kpis_employee_id_fkey (
-    id,
-    full_name,
-    avatar_url
-  ),
-  template:kpi_templates (name, category)
-`;
-
-async function getTeamMemberIds(managerId: string): Promise<string[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("manager_assignments")
-    .select("employee_id")
-    .eq("manager_id", managerId)
-    .eq("is_active", true);
-
-  return data?.map((row) => row.employee_id) ?? [];
-}
-
 export async function getEmployeeKpis(
   role: AppRole,
   userId: string,
   employeeId?: string,
 ): Promise<EmployeeKpi[]> {
-  const supabase = await createClient();
-  let teamIds: string[] | null = null;
-
-  if (role === "MANAGER") {
-    teamIds = await getTeamMemberIds(userId);
-  }
-
-  let query = supabase
-    .from("employee_kpis")
-    .select(KPI_SELECT)
-    .order("created_at", { ascending: false });
+  let kpis = [...MOCK_EMPLOYEE_KPIS];
 
   if (employeeId) {
-    query = query.eq("employee_id", employeeId);
-  } else if (role === "MANAGER" && teamIds) {
-    if (teamIds.length === 0) return [];
-    query = query.in("employee_id", teamIds);
+    kpis = kpis.filter((k) => k.employee_id === employeeId);
   } else if (role === "EMPLOYEE" || role === "INTERN") {
-    query = query.eq("employee_id", userId);
+    kpis = kpis.filter((k) => k.employee_id === userId);
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    ...row,
-    employee: Array.isArray(row.employee) ? row.employee[0] : row.employee,
-    template: Array.isArray(row.template) ? row.template[0] : row.template,
-  })) as EmployeeKpi[];
+  return kpis as unknown as EmployeeKpi[];
 }
 
 export async function getKpiDashboardStats(
@@ -86,7 +34,9 @@ export async function getKpiDashboardStats(
   userId: string,
 ): Promise<KpiDashboardStats> {
   const kpis = await getEmployeeKpis(role, userId);
-  const active = kpis.filter((k) => !["COMPLETED", "CANCELLED"].includes(k.status));
+  const active = kpis.filter(
+    (k) => !["COMPLETED", "CANCELLED"].includes(k.status),
+  );
 
   const avgCompletion =
     active.length > 0
@@ -108,36 +58,7 @@ export async function getKpiDashboardStats(
 }
 
 export async function getKpiTemplates(): Promise<KpiTemplate[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("kpi_templates")
-    .select(
-      `
-      id,
-      name,
-      description,
-      category,
-      measurement_unit,
-      default_target,
-      period,
-      department_id,
-      weight,
-      is_active,
-      created_at,
-      department:departments (id, name, code)
-    `,
-    )
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    ...row,
-    department: Array.isArray(row.department)
-      ? row.department[0] ?? null
-      : row.department,
-  })) as KpiTemplate[];
+  return MOCK_KPI_TEMPLATES as unknown as KpiTemplate[];
 }
 
 export async function getKpiTrendData(
@@ -191,56 +112,10 @@ export async function getKpiLeaderboard(
   role: AppRole,
   userId: string,
 ): Promise<LeaderboardEntry[]> {
-  const supabase = await createClient();
-  let teamIds: string[] | null = null;
-
-  if (role === "MANAGER") {
-    teamIds = await getTeamMemberIds(userId);
-    if (teamIds.length === 0) return [];
-  }
-
-  let kpiQuery = supabase
-    .from("employee_kpis")
-    .select(
-      `
-      employee_id,
-      current_value,
-      target_value,
-      status,
-      employee:profiles!employee_kpis_employee_id_fkey (
-        id,
-        full_name,
-        avatar_url
-      )
-    `,
-    )
-    .not("status", "eq", "CANCELLED");
-
-  if (role === "MANAGER" && teamIds) {
-    kpiQuery = kpiQuery.in("employee_id", teamIds);
-  } else if (role === "EMPLOYEE" || role === "INTERN") {
-    kpiQuery = kpiQuery.eq("employee_id", userId);
-  }
-
-  const { data: kpiData, error } = await kpiQuery;
-  if (error) throw error;
-
-  const { data: empProfiles } = await supabase
-    .from("employee_profiles")
-    .select(
-      `
-      profile_id,
-      department:departments (name)
-    `,
-    );
-
-  const deptMap = new Map<string, string>();
-  for (const ep of empProfiles ?? []) {
-    const dept = Array.isArray(ep.department)
-      ? ep.department[0]
-      : ep.department;
-    deptMap.set(ep.profile_id, (dept as { name: string } | null)?.name ?? "—");
-  }
+  const kpis = MOCK_EMPLOYEE_KPIS.filter((k) => k.status !== "CANCELLED");
+  const deptMap = new Map(
+    MOCK_EMPLOYEES.map((e) => [e.profile_id, e.department?.name ?? "—"]),
+  );
 
   const leaderboard = new Map<
     string,
@@ -253,25 +128,20 @@ export async function getKpiLeaderboard(
     }
   >();
 
-  for (const row of kpiData ?? []) {
-    const employee = Array.isArray(row.employee)
-      ? row.employee[0]
-      : row.employee;
-    if (!employee) continue;
-
-    const entry = leaderboard.get(row.employee_id) ?? {
-      fullName: employee.full_name,
-      avatarUrl: employee.avatar_url,
+  for (const kpi of kpis) {
+    const entry = leaderboard.get(kpi.employee_id) ?? {
+      fullName: kpi.employee.full_name,
+      avatarUrl: kpi.employee.avatar_url,
       totalProgress: 0,
       kpiCount: 0,
       onTrackCount: 0,
     };
-    entry.totalProgress += calcProgress(row);
+    entry.totalProgress += calcProgress(kpi as unknown as EmployeeKpi);
     entry.kpiCount += 1;
-    if (row.status === "ON_TRACK" || row.status === "COMPLETED") {
+    if (kpi.status === "ON_TRACK" || kpi.status === "COMPLETED") {
       entry.onTrackCount += 1;
     }
-    leaderboard.set(row.employee_id, entry);
+    leaderboard.set(kpi.employee_id, entry);
   }
 
   return Array.from(leaderboard.entries())
@@ -291,37 +161,10 @@ export async function getKpiLeaderboard(
 }
 
 export async function getAssignableEmployees(role: AppRole, userId: string) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("employee_profiles")
-    .select(
-      `
-      profile_id,
-      employee_code,
-      job_title,
-      profile:profiles!employee_profiles_profile_id_fkey (
-        id,
-        full_name,
-        email
-      )
-    `,
-    )
-    .order("employee_code");
-
-  if (role === "MANAGER") {
-    const teamIds = await getTeamMemberIds(userId);
-    if (teamIds.length === 0) return [];
-    query = query.in("profile_id", teamIds);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data ?? []).map((row) => ({
-    profile_id: row.profile_id,
-    employee_code: row.employee_code,
-    job_title: row.job_title,
-    profile: Array.isArray(row.profile) ? row.profile[0] : row.profile,
+  return MOCK_EMPLOYEES.map((emp) => ({
+    profile_id: emp.profile_id,
+    employee_code: emp.employee_code,
+    job_title: emp.job_title,
+    profile: emp.profile,
   }));
 }

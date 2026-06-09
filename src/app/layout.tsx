@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${GeistSans.variable} ${inter.variable} ${GeistSans.className}`}
+      className={`dark bg-background ${GeistSans.variable} ${inter.variable} ${GeistSans.className}`}
       suppressHydrationWarning
     >
       <body>

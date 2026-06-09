@@ -28,7 +28,9 @@ export default async function PayrollDashboardPage() {
   const profile = await requireRole(["SUPER_ADMIN", "HR"]);
 
   const summary = await getPayrollSummary(profile.id, profile.role);
-  const now = new Date();
+  const latestRecord = summary.records[0];
+  const periodMonth = latestRecord?.period_month ?? new Date().getMonth() + 1;
+  const periodYear = latestRecord?.period_year ?? new Date().getFullYear();
   const canManage = hasPermission(profile.role, "payroll:settings");
 
   const nav = [
@@ -41,7 +43,7 @@ export default async function PayrollDashboardPage() {
       <Breadcrumbs />
       <PageHeader
         title="Payroll"
-        description={`Payroll overview for ${formatMonthYear(now.getMonth() + 1, now.getFullYear())}.`}
+        description={`Payroll overview for ${formatMonthYear(periodMonth, periodYear)}.`}
       />
       <SectionNav items={nav} />
 
