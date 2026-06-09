@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table";
-import { createClient } from "@/shared/lib/supabase/server";
+
 import { formatCurrency, formatMonthYear } from "@/shared/lib/utils";
 
 interface EmployeePayrollPageProps {
@@ -42,14 +42,7 @@ export default async function EmployeePayrollPage({
   const records = await getEmployeePayroll(id, profile.role, profile.id);
 
   if (records.length === 0) {
-    const supabase = await createClient();
-    const { data: employee } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", id)
-      .single();
-
-    if (!employee) notFound();
+    notFound();
   }
 
   const employeeName = records[0]?.employee_name ?? "Employee";

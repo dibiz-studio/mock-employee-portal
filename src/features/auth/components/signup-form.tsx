@@ -21,7 +21,7 @@ import {
 } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { createClient } from "@/shared/lib/supabase/client";
+
 
 const signupSchema = z
   .object({
@@ -63,17 +63,7 @@ export function SignupForm() {
         values.fullName,
       );
 
-      if (data.user) {
-        const supabase = createClient();
-        await supabase
-          .from("profiles")
-          .update({
-            full_name: values.fullName,
-            role: "EMPLOYEE",
-            onboarding_status: "PENDING",
-          })
-          .eq("id", data.user.id);
-      }
+      // No Supabase needed in mock environment
 
       toast.success("Account created. Please sign in.");
       router.push("/login");

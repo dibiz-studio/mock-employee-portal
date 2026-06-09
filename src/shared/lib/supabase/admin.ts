@@ -1,4 +1,5 @@
-// Stub Supabase admin client — no real network calls
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+// Supabase admin stub – removed for reel
 import { createClient } from "./client";
 
 export function hasAdminClient(): boolean {

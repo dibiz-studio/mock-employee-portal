@@ -1,21 +1,21 @@
 import type { Profile } from "@/shared/stores/auth-store";
 import { MOCK_SUPER_ADMIN, MOCK_PROFILES } from "@/shared/lib/mock-data";
 
-export async function signInWithGoogle() {
-  // Mock: no-op for stub environment
-  return {};
+export async function signInWithGoogle(): Promise<{ user: typeof MOCK_SUPER_ADMIN }> {
+  // Mock sign-in returns super admin user
+  return { user: MOCK_SUPER_ADMIN };
 }
 
 export async function signUp(_email: string, _password: string, _fullName: string) {
-  return {};
+  return { user: MOCK_SUPER_ADMIN };
 }
 
 export async function syncGoogleAvatar(_userId: string, _avatarUrl: string) {
   // no-op
 }
 
-export async function signIn(_email: string, _password: string) {
-  return {};
+export async function signIn(_email: string, _password: string): Promise<{ user: typeof MOCK_SUPER_ADMIN }> {
+  return { user: MOCK_SUPER_ADMIN };
 }
 
 export async function signOut() {
