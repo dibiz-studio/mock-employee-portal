@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { createClient } from "@/shared/lib/supabase/middleware";
+// import { createClient } from "@/shared/lib/supabase/middleware"; // Supabase removed
 
 const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/auth/callback"];
 
