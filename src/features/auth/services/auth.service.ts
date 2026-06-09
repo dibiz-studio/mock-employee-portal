@@ -6,15 +6,15 @@ export async function signInWithGoogle() {
   return {};
 }
 
-export async function signUp(email: string, password: string, fullName: string) {
+export async function signUp(_email: string, _password: string, _fullName: string) {
   return {};
 }
 
-export async function syncGoogleAvatar(userId: string, avatarUrl: string) {
+export async function syncGoogleAvatar(_userId: string, _avatarUrl: string) {
   // no-op
 }
 
-export async function signIn(email: string, password: string) {
+export async function signIn(_email: string, _password: string) {
   return {};
 }
 
@@ -22,7 +22,7 @@ export async function signOut() {
   // no-op
 }
 
-export async function resetPassword(email: string) {
+export async function resetPassword(_email: string) {
   // no-op
 }
 
