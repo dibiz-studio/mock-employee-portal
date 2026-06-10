@@ -5,14 +5,14 @@ Production-grade Employee Management, KPI Tracking, Leave Management, EOD Report
 ## Tech Stack
 
 - **Frontend:** Next.js 15, TypeScript, TailwindCSS, shadcn/ui
-- **Backend:** Supabase (Auth, PostgreSQL, Storage)
+- **Backend:** Local mock services and in-memory data
 - **State:** Zustand · **Forms:** React Hook Form + Zod · **Charts:** Recharts
 
 ## Quick Start
 
 ```bash
 npm install
-cp .env.example .env.local   # add your Supabase URL + anon key
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -36,7 +36,7 @@ Google SSO is also available on the login page.
 
 ## Features
 
-- Real Supabase authentication with role-based access
+- Mock authentication with role-based access
 - Role-specific dashboards (Admin, HR, Manager, Employee, Intern)
 - Employee directory, departments, detail views
 - KPI templates, assignment, analytics, leaderboards
@@ -56,7 +56,7 @@ src/
 ├── features/      # Feature modules (auth, employees, kpi, leave, etc.)
 └── shared/        # UI components, lib, stores, types
 docs/              # Architecture & product documentation
-supabase/          # SQL migrations (reference)
+data/              # Local mock data and reference notes
 ```
 
 ## Documentation
@@ -81,9 +81,6 @@ See the [`docs/`](./docs/) folder for:
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
 
-## Supabase
+## Data Model
 
-Database includes 15 tables with RLS policies, seeded with 25 employees, 5 departments, KPIs, leave data, payroll records, and sample notifications.
-
-Migrations were applied via Supabase MCP. Reference SQL is in `supabase/migrations/`.
-"# mock-employee-portal" 
+All app data is served from local mock collections for employees, leave, KPIs, payroll, and notifications.

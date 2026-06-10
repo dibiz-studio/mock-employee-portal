@@ -107,8 +107,8 @@ export function AssignKpiForm({ employees, templates }: AssignKpiFormProps) {
     setIsSubmitting(true);
     try {
       const result = await assignKpi(values);
-      if (result.error) {
-        toast.error(result.error);
+      if (!result.success) {
+        toast.error("Failed to assign KPI");
         return;
       }
       toast.success("KPI assigned successfully");

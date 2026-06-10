@@ -10,7 +10,7 @@ import { z } from "zod";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { createClient } from "@/shared/lib/supabase/client";
+import { updateProfileDetails } from "@/features/settings/services/settings.service";
 
 const profileSchema = z.object({
   full_name: z.string().min(2, "Name is required"),
@@ -40,16 +40,10 @@ export function ProfileForm({ userId, defaultValues }: ProfileFormProps) {
   const onSubmit = async (values: ProfileFormValues) => {
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: values.full_name,
-          phone: values.phone || null,
-        })
-        .eq("id", userId);
-
-      if (error) throw error;
+      await updateProfileDetails(userId, {
+        full_name: values.full_name,
+        phone: values.phone || null,
+      });
       toast.success("Profile updated");
       router.refresh();
     } catch (error) {

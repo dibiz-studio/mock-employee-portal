@@ -1,7 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-// import { createClient } from "@/shared/lib/supabase/middleware"; // Supabase removed
-
 const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/auth/callback"];
 
 function isPublicRoute(pathname: string) {
@@ -12,7 +10,7 @@ function isPublicRoute(pathname: string) {
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
-const user = { id: "1", email: "snigdha@dibiz.com", role: "SUPER_ADMIN" };
+  const user = { id: "1", email: "snigdha@dibiz.com", role: "SUPER_ADMIN" };
 
   const { pathname } = request.nextUrl;
 

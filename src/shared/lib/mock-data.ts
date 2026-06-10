@@ -6,6 +6,21 @@
 import type { Profile } from "@/shared/stores/auth-store";
 import type { AppRole } from "@/shared/types/roles";
 
+export interface EodRecord {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  report_date: string;
+  tasks_completed: string[];
+  hours_worked: number;
+  blockers: string | null;
+  tomorrow_plan: string | null;
+  manager_comment: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
 // ─── Core Users / Profiles ────────────────────────────────────────────────
 
 export const MOCK_PROFILES: Profile[] = [
@@ -475,7 +490,7 @@ function makeEod(
   tasks: string[],
   hours: number,
   blockers?: string,
-) {
+) : EodRecord {
   return {
     id: `eod-${eodIdCounter++}`,
     employee_id: employeeId,
@@ -492,7 +507,7 @@ function makeEod(
   };
 }
 
-export const MOCK_EOD_RECORDS = [
+export const MOCK_EOD_RECORDS: EodRecord[] = [
   // Prasanth - Senior VE
   makeEod("2", "Prasanth Mahendran", "2026-05-11", ["Munchkaro Ep.6 & 8 subtitles (remaining)", "XYXX shoot", "Dibiz shoot"], 9),
   makeEod("2", "Prasanth Mahendran", "2026-05-12", ["Munchkaro Episode 6 & 8 done", "Shoot for XYXX"], 9),
@@ -736,7 +751,7 @@ export function getRecentWorkingDays(count: number, endDate = new Date()): strin
 
 // Generate recent EOD submissions for the roster. ~88% submit on a given day.
 export const MOCK_RECENT_EOD_RECORDS = (() => {
-  const records: typeof MOCK_EOD_RECORDS = [];
+  const records: EodRecord[] = [];
   const days = getRecentWorkingDays(10);
   let idc = 10000;
   days.forEach((date, dayIndex) => {
@@ -779,7 +794,7 @@ export const MOCK_RECENT_EOD_RECORDS = (() => {
 export const MOCK_ALL_EOD_RECORDS = [
   ...MOCK_RECENT_EOD_RECORDS,
   ...MOCK_EOD_RECORDS,
-];
+] as EodRecord[];
 
 // ─── Leave Policies ──────────────────────────────────────────────────────────
 

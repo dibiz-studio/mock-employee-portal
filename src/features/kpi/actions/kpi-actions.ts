@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import type { KpiPeriod } from "../types";
 
+type ActionResult = {
+  success: boolean;
+  error?: string;
+};
+
 export interface CreateTemplateInput {
   name: string;
   description?: string;
@@ -14,10 +19,21 @@ export interface CreateTemplateInput {
   weight: number;
 }
 
-export async function createKpiTemplate(input: CreateTemplateInput) {
-  // Mock: simulate success
-  revalidatePath("/kpi/templates");
-  return { success: true };
+export async function createKpiTemplate(
+  _input: CreateTemplateInput
+): Promise<ActionResult> {
+  try {
+    revalidatePath("/kpi/templates");
+
+    return {
+      success: true,
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Failed to create KPI template",
+    };
+  }
 }
 
 export interface AssignKpiInput {
@@ -33,9 +49,20 @@ export interface AssignKpiInput {
   period_end: string;
 }
 
-export async function assignKpi(input: AssignKpiInput) {
-  // Mock: simulate success
-  revalidatePath("/kpi");
-  revalidatePath(`/employees/${input.employee_id}`);
-  return { success: true };
+export async function assignKpi(
+  input: AssignKpiInput
+): Promise<ActionResult> {
+  try {
+    revalidatePath("/kpi");
+    revalidatePath(`/employees/${input.employee_id}`);
+
+    return {
+      success: true,
+    };
+  } catch {
+    return {
+      success: false,
+      error: "Failed to assign KPI",
+    };
+  }
 }

@@ -29,7 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table";
-import { createClient } from "@/shared/lib/supabase/client";
+import { createNotification } from "@/features/notifications/services/notifications.service";
+import { updateProfileRole } from "@/features/settings/services/settings.service";
 import { APP_ROLES, ROLE_LABELS, type AppRole } from "@/shared/types/roles";
 
 export interface PendingUser {
@@ -55,15 +56,8 @@ export function PendingOnboardingPanel({ users }: PendingOnboardingPanelProps) {
   const approveUser = async (userId: string, role: AppRole) => {
     setLoadingId(userId);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role, onboarding_status: "COMPLETED" })
-        .eq("id", userId);
-
-      if (error) throw error;
-
-      await supabase.from("notifications").insert({
+      await updateProfileRole(userId, role);
+      await createNotification({
         user_id: userId,
         type: "SYSTEM",
         title: "Account approved",

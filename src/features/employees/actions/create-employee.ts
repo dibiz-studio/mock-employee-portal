@@ -17,7 +17,7 @@ export interface CreateEmployeeInput {
   employment_status: "ACTIVE" | "PROBATION";
 }
 
-export async function createEmployee(input: CreateEmployeeInput) {
+export async function createEmployee(_input: CreateEmployeeInput) {
   // Mock: simulate successful employee creation
   revalidatePath("/employees");
   return { success: true, profileId: `mock-${Date.now()}` };

@@ -19,7 +19,7 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { createClient } from "@/shared/lib/supabase/client";
+
 
 const eodSchema = z.object({
   report_date: z.string().min(1, "Date is required"),
@@ -69,33 +69,17 @@ export function SubmitEodForm({
     name: "tasks",
   });
 
-  const onSubmit = async (values: EodFormValues) => {
+  const onSubmit = async (_values: EodFormValues) => {
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
-      const payload = {
-        employee_id: employeeId,
-        report_date: values.report_date,
-        tasks_completed: values.tasks.map((t) => t.value),
-        hours_worked: values.hours_worked,
-        blockers: values.blockers || null,
-        tomorrow_plan: values.tomorrow_plan || null,
-      };
-
-      const { error } = existingId
-        ? await supabase
-            .from("daily_updates")
-            .update(payload)
-            .eq("id", existingId)
-        : await supabase.from("daily_updates").insert(payload);
-
-      if (error) throw error;
+      // Mock: simulate successful EOD submission
+      await new Promise<void>((resolve) => setTimeout(resolve, 400));
       toast.success(existingId ? "EOD updated" : "EOD submitted");
       router.push("/eod/history");
       router.refresh();
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to submit EOD",
+        err instanceof Error ? err.message : "Failed to submit EOD",
       );
     } finally {
       setIsSubmitting(false);

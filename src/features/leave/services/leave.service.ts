@@ -152,3 +152,28 @@ export async function getActiveLeavePoliciesForEmployee(employeeId: string) {
     remaining_days: b.remaining_days,
   }));
 }
+
+export async function updateLeavePolicy(
+  policyId: string,
+  values: Partial<LeavePolicyRow>,
+) {
+  const policy = MOCK_LEAVE_POLICIES.find((p) => p.id === policyId);
+  if (!policy) return;
+
+  Object.assign(policy, values, { updated_at: new Date().toISOString() });
+}
+
+export async function reviewLeaveRequest(
+  requestId: string,
+  reviewerId: string,
+  status: "APPROVED" | "REJECTED",
+  reviewNotes: string | null,
+) {
+  const request = MOCK_LEAVE_REQUESTS.find((r) => r.id === requestId);
+  if (!request) return;
+
+  request.status = status;
+  request.reviewed_by = reviewerId;
+  request.reviewed_at = new Date().toISOString();
+  request.review_notes = reviewNotes;
+}

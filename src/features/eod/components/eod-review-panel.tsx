@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table";
-import { createClient } from "@/shared/lib/supabase/client";
 import { formatDate } from "@/shared/lib/utils";
 
 interface EodReviewPanelProps {
@@ -23,7 +22,7 @@ interface EodReviewPanelProps {
   reviewerId: string;
 }
 
-export function EodReviewPanel({ updates, reviewerId }: EodReviewPanelProps) {
+export function EodReviewPanel({ updates, reviewerId: _reviewerId }: EodReviewPanelProps) {
   const router = useRouter();
   const [comments, setComments] = useState<Record<string, string>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -31,22 +30,14 @@ export function EodReviewPanel({ updates, reviewerId }: EodReviewPanelProps) {
   const handleReview = async (updateId: string) => {
     setLoadingId(updateId);
     try {
-      const supabase = createClient() as any;
-      const { error } = await supabase
-        .from("daily_updates")
-        .update({
-          manager_comment: comments[updateId] || null,
-          reviewed_by: reviewerId,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", updateId);
-
-      if (error) throw error;
+      // Mock: simulate saving manager review (comment captured: comments[updateId])
+      void comments[updateId]; // ensure state is read
+      await new Promise<void>((resolve) => setTimeout(resolve, 300));
       toast.success("Review saved");
       router.refresh();
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to save review",
+        err instanceof Error ? err.message : "Failed to save review",
       );
     } finally {
       setLoadingId(null);

@@ -6,10 +6,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import type { NotificationRow } from "@/features/notifications/services/notifications.service";
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "@/features/notifications/services/notifications.service";
 import { EmptyState } from "@/shared/components/data/empty-state";
 import { StatusBadge } from "@/shared/components/data/status-badge";
 import { Button } from "@/shared/components/ui/button";
-import { createClient } from "@/shared/lib/supabase/client";
 import { formatDateTime } from "@/shared/lib/utils";
 
 interface NotificationsListProps {
@@ -25,26 +28,14 @@ export function NotificationsList({
   const [loading, setLoading] = useState(false);
 
   const markRead = async (id: string) => {
-    const supabase = createClient();
-    await supabase
-      .from("notifications")
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq("id", id)
-      .eq("user_id", userId);
+    await markNotificationRead(id, userId);
     router.refresh();
   };
 
   const markAllRead = async () => {
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .eq("is_read", false);
-
-      if (error) throw error;
+      await markAllNotificationsRead(userId);
       toast.success("All notifications marked as read");
       router.refresh();
     } catch (error) {

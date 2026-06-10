@@ -18,7 +18,7 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { createClient } from "@/shared/lib/supabase/client";
+import { updateLeavePolicy } from "@/features/leave/services/leave.service";
 
 const policySchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -68,25 +68,19 @@ export function PolicyForm({ policy }: PolicyFormProps) {
   const onSubmit = async (values: PolicyFormValues) => {
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("leave_policies")
-        .update({
-          name: values.name,
-          code: values.code,
-          description: values.description || null,
-          days_per_year: values.days_per_year,
-          min_notice_days: values.min_notice_days,
-          max_consecutive_days: values.max_consecutive_days || null,
-          carry_forward_limit: values.carry_forward_limit || null,
-          is_paid: values.is_paid,
-          requires_approval: values.requires_approval,
-          carry_forward: values.carry_forward,
-          is_active: values.is_active,
-        })
-        .eq("id", policy.id);
-
-      if (error) throw error;
+      await updateLeavePolicy(policy.id, {
+        name: values.name,
+        code: values.code,
+        description: values.description || null,
+        days_per_year: values.days_per_year,
+        min_notice_days: values.min_notice_days,
+        max_consecutive_days: values.max_consecutive_days || null,
+        carry_forward_limit: values.carry_forward_limit || null,
+        is_paid: values.is_paid,
+        requires_approval: values.requires_approval,
+        carry_forward: values.carry_forward,
+        is_active: values.is_active,
+      });
       toast.success("Policy updated");
       router.push("/leave/policies");
       router.refresh();

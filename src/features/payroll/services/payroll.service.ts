@@ -23,7 +23,7 @@ export async function getPayrollRecords(
   role: AppRole,
   options?: { employeeId?: string; month?: number; year?: number },
 ): Promise<PayrollRecordRow[]> {
-  let records = [...MOCK_PAYROLL_RECORDS];
+  let records: PayrollRecordRow[] = MOCK_PAYROLL_RECORDS as PayrollRecordRow[];
 
   if (options?.employeeId) {
     records = records.filter((r) => r.employee_id === options.employeeId);

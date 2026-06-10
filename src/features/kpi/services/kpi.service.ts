@@ -109,8 +109,8 @@ export async function getKpiCategoryBreakdown(
 }
 
 export async function getKpiLeaderboard(
-  role: AppRole,
-  userId: string,
+  _role: AppRole,
+  _userId: string,
 ): Promise<LeaderboardEntry[]> {
   const kpis = MOCK_EMPLOYEE_KPIS.filter((k) => k.status !== "CANCELLED");
   const deptMap = new Map(
@@ -160,7 +160,7 @@ export async function getKpiLeaderboard(
     .sort((a, b) => b.avgProgress - a.avgProgress);
 }
 
-export async function getAssignableEmployees(role: AppRole, userId: string) {
+export async function getAssignableEmployees(_role: AppRole, _userId: string) {
   return MOCK_EMPLOYEES.map((emp) => ({
     profile_id: emp.profile_id,
     employee_code: emp.employee_code,

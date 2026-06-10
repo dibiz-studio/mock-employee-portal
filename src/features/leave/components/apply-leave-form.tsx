@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { createClient } from "@/shared/lib/supabase/client";
 
 const applyLeaveSchema = z
   .object({
@@ -89,8 +88,9 @@ export function ApplyLeaveForm({ employeeId, policies }: ApplyLeaveFormProps) {
 
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from("leave_requests").insert({
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const mockLeaveRequest = {
         employee_id: employeeId,
         policy_id: values.policy_id,
         start_date: values.start_date,
@@ -98,9 +98,9 @@ export function ApplyLeaveForm({ employeeId, policies }: ApplyLeaveFormProps) {
         days_requested: daysRequested,
         reason: values.reason,
         status: "PENDING",
-      });
+      };
 
-      if (error) throw error;
+      console.log(mockLeaveRequest);
       toast.success("Leave request submitted");
       router.push("/leave/history");
       router.refresh();

@@ -87,5 +87,19 @@ export async function updateProfileRole(userId: string, role: AppRole) {
   const profile = MOCK_PROFILES.find((p) => p.id === userId);
   if (profile) {
     (profile as { role: AppRole }).role = role;
+    profile.onboarding_status = "COMPLETED";
+    profile.updated_at = new Date().toISOString();
+  }
+}
+
+export async function updateProfileDetails(
+  userId: string,
+  values: { full_name: string; phone: string | null },
+) {
+  const profile = MOCK_PROFILES.find((p) => p.id === userId);
+  if (profile) {
+    profile.full_name = values.full_name;
+    profile.phone = values.phone;
+    profile.updated_at = new Date().toISOString();
   }
 }

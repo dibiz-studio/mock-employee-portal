@@ -2,6 +2,7 @@ import { MOCK_NOTIFICATIONS } from "@/shared/lib/mock-data";
 
 export interface NotificationRow {
   id: string;
+  user_id: string;
   type: string;
   title: string;
   message: string;
@@ -12,7 +13,9 @@ export interface NotificationRow {
 }
 
 // In-memory store for mutations during the session
-const _notifications = MOCK_NOTIFICATIONS.map((n) => ({ ...n }));
+const _notifications: NotificationRow[] = MOCK_NOTIFICATIONS.map((n) => ({
+  ...n,
+}));
 
 export async function getNotifications(
   userId: string,
@@ -42,4 +45,18 @@ export async function markAllNotificationsRead(userId: string) {
       notif.read_at = new Date().toISOString();
     }
   }
+}
+
+export async function createNotification(
+  notification: Omit<NotificationRow, "id" | "is_read" | "read_at" | "created_at">,
+) {
+  const nextNotification = {
+    ...notification,
+    id: `notif-${_notifications.length + 1}`,
+    is_read: false,
+    read_at: null,
+    created_at: new Date().toISOString(),
+  } as NotificationRow;
+
+  _notifications.unshift(nextNotification);
 }

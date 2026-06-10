@@ -31,7 +31,9 @@ export async function createDepartment(input: CreateDepartmentInput) {
     is_active: true,
     employee_count: 0,
   };
-  (MOCK_DEPARTMENTS as typeof MOCK_DEPARTMENTS).push(newDept as (typeof MOCK_DEPARTMENTS)[0]);
+  (MOCK_DEPARTMENTS as typeof MOCK_DEPARTMENTS).push(
+    newDept as unknown as (typeof MOCK_DEPARTMENTS)[0],
+  );
 
   revalidatePath("/settings/departments");
   revalidatePath("/employees/departments");

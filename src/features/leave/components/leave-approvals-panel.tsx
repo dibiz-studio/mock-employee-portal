@@ -16,8 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table";
-import { createClient } from "@/shared/lib/supabase/client";
 import { formatDate } from "@/shared/lib/utils";
+import { reviewLeaveRequest } from "@/features/leave/services/leave.service";
 
 interface LeaveApprovalsPanelProps {
   requests: LeaveRequestRow[];
@@ -38,19 +38,12 @@ export function LeaveApprovalsPanel({
   ) => {
     setLoadingId(requestId);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("leave_requests")
-        .update({
-          status,
-          reviewed_by: reviewerId,
-          reviewed_at: new Date().toISOString(),
-          review_notes: notes[requestId] || null,
-        })
-        .eq("id", requestId)
-        .eq("status", "PENDING");
-
-      if (error) throw error;
+      await reviewLeaveRequest(
+        requestId,
+        reviewerId,
+        status,
+        notes[requestId] || null,
+      );
       toast.success(`Leave request ${status.toLowerCase()}`);
       router.refresh();
     } catch (error) {
