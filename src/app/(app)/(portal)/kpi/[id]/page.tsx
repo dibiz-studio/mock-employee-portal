@@ -91,7 +91,7 @@ export default async function KpiDetailPage({ params }: KpiDetailPageProps) {
 
       <PageHeader
         title={kpi.title}
-        description={`${employeeName} · ${kpi.template?.category ?? "Uncategorized"} · ${kpi.period}`}
+        description={`${employeeName} Â· ${kpi.template?.category ?? "Uncategorized"} Â· ${kpi.period}`}
         actions={
           <Button variant="outline" asChild>
             <Link href={`/employees/${kpi.employee_id}`}>

@@ -125,7 +125,7 @@ export async function getKpiLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const kpis = MOCK_EMPLOYEE_KPIS.filter((k) => k.status !== "CANCELLED");
   const deptMap = new Map(
-    MOCK_EMPLOYEES.map((e) => [e.profile_id, e.department?.name ?? "—"]),
+    MOCK_EMPLOYEES.map((e) => [e.profile_id, e.department?.name ?? "Ã¢â‚¬â€"]),
   );
 
   const leaderboard = new Map<
@@ -160,7 +160,7 @@ export async function getKpiLeaderboard(
       employeeId,
       fullName: entry.fullName,
       avatarUrl: entry.avatarUrl,
-      department: deptMap.get(employeeId) ?? "—",
+      department: deptMap.get(employeeId) ?? "Ã¢â‚¬â€",
       avgProgress:
         entry.kpiCount > 0
           ? Math.round(entry.totalProgress / entry.kpiCount)
