@@ -63,7 +63,7 @@ export function SignupForm() {
         values.fullName,
       );
 
-      // No Supabase needed in mock environment
+      // Mock auth handles sign-up locally in this build
 
       toast.success("Account created. Please sign in.");
       router.push("/login");

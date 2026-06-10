@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Seed Super Admin: tech@dibizsolution.com
--- Run in Supabase SQL Editor (requires service role / postgres access)
+-- Run in your SQL editor or database console
 -- Password: Password123!
 -- =============================================================================
 

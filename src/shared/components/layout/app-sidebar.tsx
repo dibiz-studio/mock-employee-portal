@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -54,14 +55,11 @@ export function AppSidebar({ initialRole }: AppSidebarProps) {
       <aside
         className={cn(
           "hidden h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-in-out md:flex",
-          collapsed ? "w-16" : "w-64",
+          collapsed ? "w-20" : "w-64",
         )}
       >
         <div
-          className={cn(
-            "flex h-14 items-center border-b border-sidebar-border px-3",
-            collapsed ? "justify-center" : "justify-between",
-          )}
+          className="flex h-14 items-center justify-between border-b border-sidebar-border px-2"
         >
           {!collapsed ? (
             <Link href="/dashboard">
@@ -70,10 +68,16 @@ export function AppSidebar({ initialRole }: AppSidebarProps) {
           ) : (
             <Link
               href="/dashboard"
-              className="text-lg font-bold text-primary"
+              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-sidebar-border bg-background/80"
               aria-label="Dibiz Studio home"
             >
-              D
+              <Image
+                src="/dibiz-logo.png"
+                alt="Dibiz Studio"
+                width={32}
+                height={32}
+                className="h-full w-full object-contain"
+              />
             </Link>
           )}
           <Button

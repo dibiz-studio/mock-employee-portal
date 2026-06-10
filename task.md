@@ -1,7 +1,7 @@
 # Dibiz Studio HRMS — Task Checklist
 
 ## 1. Clean Mock Data
-- [x] Purge Supabase tables (profiles, departments, KPIs, leave, etc.)
+- [x] Purge legacy backend tables (profiles, departments, KPIs, leave, etc.)
 - [x] Single admin user: `admin@dibizstudio.com`
 
 ## 2. Branding

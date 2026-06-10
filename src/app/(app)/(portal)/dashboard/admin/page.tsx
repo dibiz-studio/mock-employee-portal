@@ -16,12 +16,14 @@ export default async function AdminDashboardPage() {
     getDashboardStats(profile.id, profile.role),
     getPendingOnboardingUsers(),
   ]);
+  const founderLabel =
+    profile.role === "SUPER_ADMIN" ? "Founder & CEO" : "Organization leader";
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Admin Dashboard"
-        description={`Welcome back, ${profile.full_name}. Organization-wide overview.`}
+        description={`Welcome back, ${profile.full_name}. ${founderLabel} dashboard for organization-wide overview.`}
         actions={
           pendingUsers.length > 0 ? (
             <Button asChild variant="outline">

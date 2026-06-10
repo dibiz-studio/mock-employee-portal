@@ -139,6 +139,24 @@ export async function getTeamEodForReview(
   return records.slice(0, 60);
 }
 
+export async function getEmployeeEodHistory(
+  employeeId: string,
+  options?: { limit?: number },
+): Promise<DailyUpdateRow[]> {
+  let records = MOCK_ALL_EOD_RECORDS.filter(
+    (record) => record.employee_id === employeeId,
+  ).sort(
+    (a, b) =>
+      new Date(b.report_date).getTime() - new Date(a.report_date).getTime(),
+  );
+
+  if (options?.limit) {
+    records = records.slice(0, options.limit);
+  }
+
+  return records;
+}
+
 export async function getEodByDate(employeeId: string, date: string) {
   return (
     MOCK_ALL_EOD_RECORDS.find(

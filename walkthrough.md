@@ -53,7 +53,7 @@ Open http://localhost:3000
 |------|-------|----------|
 | Dark theme | Open any page | Dark background, teal accents |
 | Admin login | Email/password above | Dashboard loads, full sidebar |
-| Google SSO | Click Sign in with Google | Redirect to Google (requires Supabase Google provider) |
+| Google SSO | Click Sign in with Google | Redirect to Google (if OAuth is enabled) |
 | Avatar | Login with Google | Profile photo in header |
 | Sign up | `/signup` → create account → login | Onboarding waiting page |
 | Role assign | Admin → Settings → Roles → assign role | User reaches dashboard |

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CheckCircle2, Clock4 } from "lucide-react";
 
 import type { EodBoard, EodBoardEmployeeDay } from "@/features/eod/services/eod.service";
@@ -125,9 +126,12 @@ export function EodTeamBoard({ board }: { board: EodBoard }) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
+                  <Link
+                    href={`/eod/employee/${emp.employee_id}`}
+                    className="block truncate text-sm font-medium hover:text-primary hover:underline"
+                  >
                     {emp.employee_name}
-                  </p>
+                  </Link>
                   <p className="truncate text-xs text-muted-foreground">
                     {emp.job_title} · {emp.department}
                   </p>

@@ -3,7 +3,9 @@ import {
   MOCK_EMPLOYEE_KPIS,
   MOCK_KPI_TEMPLATES,
   MOCK_EMPLOYEES,
+  MOCK_DEPARTMENTS,
 } from "@/shared/lib/mock-data";
+import { createNotification } from "@/features/notifications/services/notifications.service";
 import { calcProgress } from "../lib/utils";
 import type {
   EmployeeKpi,
@@ -27,6 +29,15 @@ export async function getEmployeeKpis(
   }
 
   return kpis as unknown as EmployeeKpi[];
+}
+
+export async function getKpiById(
+  role: AppRole,
+  userId: string,
+  kpiId: string,
+): Promise<EmployeeKpi | null> {
+  const kpis = await getEmployeeKpis(role, userId);
+  return kpis.find((kpi) => kpi.id === kpiId) ?? null;
 }
 
 export async function getKpiDashboardStats(
@@ -167,4 +178,106 @@ export async function getAssignableEmployees(_role: AppRole, _userId: string) {
     job_title: emp.job_title,
     profile: emp.profile,
   }));
+}
+
+export interface CreateKpiTemplateInput {
+  name: string;
+  description?: string;
+  category: string;
+  measurement_unit: string;
+  default_target?: number;
+  period: "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY";
+  department_id?: string;
+  weight: number;
+}
+
+export async function createKpiTemplateRecord(input: CreateKpiTemplateInput) {
+  const department = input.department_id
+    ? MOCK_DEPARTMENTS.find((d) => d.id === input.department_id) ?? null
+    : null;
+
+  const template = {
+    id: `kpit-${MOCK_KPI_TEMPLATES.length + 1}`,
+    name: input.name,
+    description: input.description ?? null,
+    category: input.category,
+    measurement_unit: input.measurement_unit,
+    default_target: input.default_target ?? null,
+    period: input.period,
+    department_id: input.department_id ?? null,
+    weight: input.weight,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    department: department
+      ? { id: department.id, name: department.name, code: department.code }
+      : null,
+  };
+
+  MOCK_KPI_TEMPLATES.unshift(
+    template as unknown as (typeof MOCK_KPI_TEMPLATES)[number],
+  );
+
+  return { success: true, id: template.id };
+}
+
+export interface AssignKpiRecordInput {
+  employee_id: string;
+  template_id?: string;
+  title: string;
+  description?: string;
+  target_value: number;
+  unit: string;
+  weight: number;
+  period: "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY";
+  period_start: string;
+  period_end: string;
+}
+
+export async function assignKpiRecord(input: AssignKpiRecordInput) {
+  const employee = MOCK_EMPLOYEES.find(
+    (emp) => emp.profile_id === input.employee_id,
+  );
+  if (!employee) {
+    return { success: false, error: "Employee not found" };
+  }
+
+  const template = input.template_id
+    ? MOCK_KPI_TEMPLATES.find((item) => item.id === input.template_id) ?? null
+    : null;
+
+  MOCK_EMPLOYEE_KPIS.unshift({
+    id: `ekpi-${MOCK_EMPLOYEE_KPIS.length + 1}`,
+    employee_id: input.employee_id,
+    template_id: input.template_id ?? null,
+    title: input.title,
+    description: input.description ?? null,
+    target_value: input.target_value,
+    current_value: 0,
+    unit: input.unit,
+    weight: input.weight,
+    period: input.period,
+    period_start: input.period_start,
+    period_end: input.period_end,
+    status: "NOT_STARTED",
+    notes: null,
+    created_at: new Date().toISOString(),
+    employee: {
+      id: employee.profile.id,
+      full_name: employee.profile.full_name,
+      avatar_url: employee.profile.avatar_url,
+    },
+    template: template
+      ? { name: template.name, category: template.category }
+      : null,
+  } as unknown as (typeof MOCK_EMPLOYEE_KPIS)[number]);
+
+  await createNotification({
+    user_id: employee.profile_id,
+    type: "SYSTEM",
+    title: "New KPI assigned",
+    message: `You received ${input.title} for ${input.period.toLowerCase()} tracking.`,
+    link: "/kpi",
+  });
+
+  return { success: true };
 }

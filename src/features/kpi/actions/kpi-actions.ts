@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import type { KpiPeriod } from "../types";
+import {
+  assignKpiRecord,
+  createKpiTemplateRecord,
+} from "@/features/kpi/services/kpi.service";
 
 type ActionResult = {
   success: boolean;
@@ -20,10 +24,15 @@ export interface CreateTemplateInput {
 }
 
 export async function createKpiTemplate(
-  _input: CreateTemplateInput
+  input: CreateTemplateInput,
 ): Promise<ActionResult> {
   try {
+    const result = await createKpiTemplateRecord(input);
+    if (!result.success) {
+      return result;
+    }
     revalidatePath("/kpi/templates");
+    revalidatePath("/kpi");
 
     return {
       success: true,
@@ -53,6 +62,10 @@ export async function assignKpi(
   input: AssignKpiInput
 ): Promise<ActionResult> {
   try {
+    const result = await assignKpiRecord(input);
+    if (!result.success) {
+      return result;
+    }
     revalidatePath("/kpi");
     revalidatePath(`/employees/${input.employee_id}`);
 

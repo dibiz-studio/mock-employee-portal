@@ -13,10 +13,12 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "Dibiz Studio – Employee Management Portal",
+  title: "Dibiz Studio - Employee Management Portal",
   description: "Employee management for Dibiz Studio.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/dibiz-logo.png",
+    shortcut: "/dibiz-logo.png",
+    apple: "/dibiz-logo.png",
   },
 };
 

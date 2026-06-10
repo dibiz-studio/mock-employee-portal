@@ -266,11 +266,11 @@ Additional pages accessed via drawer menu or in-page navigation.
 
 ## 6. API Routes (Minimal)
 
-Prefer Supabase client direct. Optional route handlers:
+Prefer local service calls first. Optional route handlers:
 
 | Route | Method | Purpose |
 |-------|--------|---------|
-| `/api/auth/callback` | GET | Supabase OAuth callback (if enabled later) |
+| `/api/auth/callback` | GET | OAuth callback hook (if enabled later) |
 | `/api/seed` | POST | Dev seed trigger (protected, disabled in prod) |
 | `/api/reports/generate` | POST | Server-side PDF generation if client too heavy |
 

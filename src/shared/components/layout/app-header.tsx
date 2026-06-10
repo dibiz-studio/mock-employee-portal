@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Bell, LogOut, Menu, Settings, User } from "lucide-react";
 
 import { useAuth } from "@/features/auth/components/auth-provider";
-import { Logo } from "@/shared/components/logo";
 import { ThemeToggle } from "@/shared/components/theme-provider";
 import {
   Avatar,
@@ -67,12 +66,6 @@ export function AppHeader({
       >
         <Menu className="h-5 w-5" />
       </Button>
-
-      <div className="hidden md:block">
-        <Link href="/dashboard">
-          <Logo />
-        </Link>
-      </div>
 
       {title ? (
         <h1 className="truncate text-lg font-semibold md:text-xl">{title}</h1>

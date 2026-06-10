@@ -9,6 +9,7 @@ import {
   requireEmployeeAccess,
 } from "@/features/employees/services/employee.service";
 import { getEmployeeKpis } from "@/features/kpi/services/kpi.service";
+import { getEmployeeEodHistory as getEodHistory } from "@/features/eod/services/eod.service";
 import { Breadcrumbs } from "@/shared/components/layout/breadcrumbs";
 import { PageHeader } from "@/shared/components/data/page-header";
 import { StatusBadge } from "@/shared/components/data/status-badge";
@@ -36,10 +37,11 @@ export default async function EmployeeDetailPage({
   const { id } = await params;
   const viewer = await requireEmployeeAccess(id);
 
-  const [employee, kpis, leaveRequests] = await Promise.all([
+  const [employee, kpis, leaveRequests, eodHistory] = await Promise.all([
     getEmployeeByProfileId(id),
     getEmployeeKpis(viewer.role, viewer.id, id),
     getEmployeeLeaveRequests(id),
+    getEodHistory(id),
   ]);
 
   if (!employee) notFound();
@@ -83,6 +85,7 @@ export default async function EmployeeDetailPage({
         employee={employee}
         kpis={kpis}
         leaveRequests={leaveRequests}
+        eodHistory={eodHistory}
       />
     </div>
   );

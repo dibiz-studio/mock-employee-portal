@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { createLeaveRequest } from "@/features/leave/services/leave.service";
 
 const applyLeaveSchema = z
   .object({
@@ -88,19 +89,20 @@ export function ApplyLeaveForm({ employeeId, policies }: ApplyLeaveFormProps) {
 
     setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const mockLeaveRequest = {
+      const result = await createLeaveRequest({
         employee_id: employeeId,
         policy_id: values.policy_id,
         start_date: values.start_date,
         end_date: values.end_date,
         days_requested: daysRequested,
         reason: values.reason,
-        status: "PENDING",
-      };
+      });
 
-      console.log(mockLeaveRequest);
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to submit leave");
+        return;
+      }
+
       toast.success("Leave request submitted");
       router.push("/leave/history");
       router.refresh();

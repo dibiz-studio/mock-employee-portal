@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
-import { hasPermission } from "@/shared/lib/rbac";
 import { formatDate } from "@/shared/lib/utils";
 
 const EOD_NAV = [
@@ -30,7 +29,7 @@ export default async function EodDashboardPage() {
   const profile = await getServerProfile();
   if (!profile) return null;
 
-  const canReview = hasPermission(profile.role, "eod:review:team");
+  const canReview = ["SUPER_ADMIN", "HR", "MANAGER"].includes(profile.role);
 
   const nav = [
     ...EOD_NAV,

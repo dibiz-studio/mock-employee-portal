@@ -3,7 +3,9 @@ import {
   MOCK_LEAVE_POLICIES,
   MOCK_LEAVE_REQUESTS,
   MOCK_LEAVE_BALANCES,
+  MOCK_PROFILES,
 } from "@/shared/lib/mock-data";
+import { createNotification } from "@/features/notifications/services/notifications.service";
 
 export interface LeaveBalance {
   id: string;
@@ -176,4 +178,69 @@ export async function reviewLeaveRequest(
   request.reviewed_by = reviewerId;
   request.reviewed_at = new Date().toISOString();
   request.review_notes = reviewNotes;
+
+  await createNotification({
+    user_id: request.employee_id,
+    type: "LEAVE_REQUEST",
+    title: `Leave request ${status.toLowerCase()}`,
+    message: `Your ${request.policy_name.toLowerCase()} request for ${request.start_date} to ${request.end_date} was ${status.toLowerCase()}.`,
+    link: "/leave/history",
+  });
+}
+
+export interface CreateLeaveRequestInput {
+  employee_id: string;
+  policy_id: string;
+  start_date: string;
+  end_date: string;
+  days_requested: number;
+  reason: string;
+}
+
+export async function createLeaveRequest(input: CreateLeaveRequestInput) {
+  const profile = MOCK_PROFILES.find((p) => p.id === input.employee_id);
+  const policy = MOCK_LEAVE_POLICIES.find((p) => p.id === input.policy_id);
+
+  if (!profile || !policy) {
+    return { success: false, error: "Unable to create leave request" };
+  }
+
+  const newRequest: LeaveRequestRow = {
+    id: `lr-${MOCK_LEAVE_REQUESTS.length + 1}`,
+    employee_id: profile.id,
+    employee_name: profile.full_name,
+    policy_id: policy.id,
+    policy_name: policy.name,
+    start_date: input.start_date,
+    end_date: input.end_date,
+    days_requested: input.days_requested,
+    reason: input.reason,
+    status: "PENDING",
+    reviewed_by: null,
+    reviewed_at: null,
+    review_notes: null,
+    created_at: new Date().toISOString(),
+  };
+
+  MOCK_LEAVE_REQUESTS.unshift(
+    newRequest as unknown as (typeof MOCK_LEAVE_REQUESTS)[number],
+  );
+
+  await createNotification({
+    user_id: profile.id,
+    type: "LEAVE_REQUEST",
+    title: "Leave request submitted",
+    message: `Your ${policy.name.toLowerCase()} request is now pending review.`,
+    link: "/leave/history",
+  });
+
+  await createNotification({
+    user_id: "1",
+    type: "LEAVE_REQUEST",
+    title: "New Leave Request",
+    message: `${profile.full_name} submitted ${policy.name.toLowerCase()} for ${input.start_date} to ${input.end_date}.`,
+    link: "/leave/approvals",
+  });
+
+  return { success: true, id: newRequest.id };
 }

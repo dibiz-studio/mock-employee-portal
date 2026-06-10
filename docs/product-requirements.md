@@ -12,7 +12,7 @@
 
 The HRMS / KPI Management Portal is a production-grade SaaS platform for employee lifecycle management, performance tracking (KPIs), leave administration, end-of-day reporting, payroll assistance, and organizational analytics.
 
-The product targets mid-size companies (50–500 employees) that need a unified HR operations hub without the complexity of legacy enterprise suites. The initial release prioritizes **frontend polish and user experience** (95% production-ready feel) with **Supabase-backed real auth, sessions, profiles, and database structure**. Business workflows may use seeded or mock data where backend logic is deferred.
+The product targets mid-size companies (50–500 employees) that need a unified HR operations hub without the complexity of legacy enterprise suites. The initial release prioritizes **frontend polish and user experience** (95% production-ready feel) with **local mock auth, sessions, profiles, and data services**. Business workflows may use seeded or mock data where backend logic is deferred.
 
 **Design north star:** A founder opens the app and believes it is a paid SaaS product already in use by real companies.
 
@@ -127,7 +127,7 @@ A single, role-aware portal where:
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| AUTH-01 | Users authenticate via Supabase Auth (email/password) | P0 |
+| AUTH-01 | Users authenticate via local mock auth (email/password) | P0 |
 | AUTH-02 | Session persists across browser refresh | P0 |
 | AUTH-03 | Protected routes redirect unauthenticated users to login | P0 |
 | AUTH-04 | Forgot password flow with email reset UI | P1 |
@@ -154,7 +154,7 @@ A single, role-aware portal where:
 | EMP-02 | Employee detail with tabs: overview, KPI, leave, documents, performance, timeline | P0 |
 | EMP-03 | Create/edit employee (HR, Super Admin) | P0 |
 | EMP-04 | Department and manager assignment views | P0 |
-| EMP-05 | Document upload to Supabase Storage | P1 |
+| EMP-05 | Document upload to app-managed storage layer | P1 |
 | EMP-06 | Employee timeline from audit logs and status changes | P1 |
 
 ### 7.4 KPI Management
@@ -309,7 +309,7 @@ Every page must implement:
 | Language | TypeScript |
 | Styling | TailwindCSS |
 | Components | shadcn/ui |
-| Backend | Supabase (Auth, Database, Storage) |
+| Backend | Local mock services (Auth, Data, Storage abstraction) |
 | Validation | Zod |
 | Forms | React Hook Form |
 | Client state | Zustand |
@@ -322,10 +322,10 @@ Every page must implement:
 ## 11. Assumptions & Constraints
 
 1. Single organization (not multi-tenant) in v1; schema allows future org_id column
-2. Supabase is the sole backend; no custom API server in v1
+2. Local mock services are the sole backend in v1; no custom API server
 3. Business logic stays thin; complex payroll calculations deferred
 4. English-only UI in v1
-5. Email delivery for password reset uses Supabase Auth defaults
+5. Email delivery for password reset uses the app's mocked auth flow
 
 ---
 
